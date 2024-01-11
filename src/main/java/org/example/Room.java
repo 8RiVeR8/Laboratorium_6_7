@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Room implements Serializable {
-    ArrayList<String> users = new ArrayList<>();
-    private String roomID;
-    private char [][] board;
-    private int index = 1;
-    private char winner;
+    ArrayList<User> users = new ArrayList<>();
+    String roomID;
+    char [][] board;
+    int index = 1;
+    char winner;
 
-    public Room(String roomID, char[][] board) {
+    public Room(String roomID) {
         this.roomID = String.valueOf(index);
         this.board = new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}};
         index++;

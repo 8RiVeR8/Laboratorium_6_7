@@ -5,15 +5,19 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.rmi.Naming;
+import java.rmi.RemoteException;
 
 public class Client {
-    static private JComboBox<String> rooms;
+    static private JComboBox<Room> rooms;
     static private JPanel buttons;
     static private JLabel labelWins, labelDraws, labelLosses;
+    static IServer server;
+    static User myUser;
     public static void main(String[] args) {
         try {
-            IServer server = (IServer) Naming.lookup("rmi://localhost:1099/Server");
-            server.Connect("Connected");
+            server = (IServer) Naming.lookup("rmi://localhost:1099/Server");
+            server.connect("Connected");
+            myUser = server.logIN();
         }catch (Exception e){
             System.out.println(e);
         }
@@ -40,7 +44,11 @@ public class Client {
                 frame.add(Box.createVerticalStrut(25));
 
                 // Combobox z marginesem
-                rooms = new JComboBox<>(new String[]{"Room 1", "Room 2", "Room 3"});
+                try {
+                    comboBoxWorker();
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
                 rooms.setMaximumSize(new Dimension(150, 30)); // Ustawienia szerokości i wysokości
                 rooms.setAlignmentX(Component.CENTER_ALIGNMENT);
                 rooms.setBorder(new EmptyBorder(5, 2, 5, 2)); // Dodanie marginesów
@@ -107,7 +115,11 @@ public class Client {
                 createButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        create();
+                        try {
+                            create();
+                        } catch (RemoteException ex) {
+                            throw new RuntimeException(ex);
+                        }
                     }
                 });
 
@@ -130,11 +142,25 @@ public class Client {
 
     }
 
-    public static void create() {
-
+    public static void create() throws RemoteException {
+        server.createRoom(myUser);
+        comboBoxWorker();
     }
 
     public static void observe() {
 
+    }
+
+    static void comboBoxWorker() throws RemoteException {
+        rooms = new JComboBox<>(server.getRoomList().toArray(new Room[0]));
+        rooms.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                if (value instanceof Room) {
+                    value = "Room " + ((Room) value).roomID;
+                }
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
     }
 }

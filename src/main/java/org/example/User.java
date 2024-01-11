@@ -3,12 +3,12 @@ package org.example;
 import java.io.Serializable;
 
 public class User implements Serializable {
-    private String ID;
-    private char[][] table;
-    private boolean hasStarted;
-    private int [] statistic;
+    int ID;
+    char[][] table;
+    boolean hasStarted;
+    int [] statistic;
 
-    public User(String ID) {
+    public User(int ID) {
         this.ID = ID;
     }
 }

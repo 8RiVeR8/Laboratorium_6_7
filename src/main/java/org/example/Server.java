@@ -21,26 +21,29 @@ public class Server extends UnicastRemoteObject implements IServer{
         }catch (Exception e){
             System.out.println(e);
         }
-
-        ConnectTwo("Connected");
     }
 
     @Override
-    public void Connect(String txt) throws RemoteException {
+    public void connect(String txt) throws RemoteException {
         System.out.println(txt);
     }
 
     @Override
     public User logIN() throws RemoteException {
-        return null;
+        User user = new User(userList.size());
+        userList.add(user);
+        return user;
     }
 
     @Override
     public ArrayList<Room> getRoomList() throws RemoteException {
-        return null;
+        return roomList;
     }
 
-    public static void ConnectTwo(String txt){
-        System.out.println(txt);
+    @Override
+    public void createRoom(User user) throws RemoteException {
+        Room room = new Room(String.valueOf(roomList.size()+1));
+        room.users.add(user);
+        roomList.add(room);
     }
 }

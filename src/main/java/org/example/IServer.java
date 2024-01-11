@@ -4,7 +4,8 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 public interface IServer extends Remote {
-    void Connect (String txt) throws RemoteException;
+    void connect (String txt) throws RemoteException;
      User logIN () throws RemoteException;
      ArrayList<Room> getRoomList () throws RemoteException;
+     void createRoom (User user) throws RemoteException;
 }
