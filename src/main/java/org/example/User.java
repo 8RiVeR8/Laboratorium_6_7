@@ -11,4 +11,8 @@ public class User implements Serializable {
     public User(int ID) {
         this.ID = ID;
     }
+
+    public void setTable(char[][] table) {
+        this.table = table;
+    }
 }

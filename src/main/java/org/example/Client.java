@@ -4,8 +4,12 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.net.Socket;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 public class Client {
     static private JComboBox<Room> rooms;
@@ -108,7 +112,11 @@ public class Client {
                 joinButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        join();
+                        try {
+                            join();
+                        } catch (RemoteException ex) {
+                            throw new RuntimeException(ex);
+                        }
                     }
                 });
 
@@ -126,7 +134,11 @@ public class Client {
                 observeButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        observe();
+                        try {
+                            observe();
+                        } catch (RemoteException ex) {
+                            throw new RuntimeException(ex);
+                        }
                     }
                 });
 
@@ -138,29 +150,80 @@ public class Client {
         });
     }
 
-    public static void join() {
+    public static void join() throws RemoteException {
+        Room selectedRoom = (Room) rooms.getSelectedItem();
+        if (selectedRoom != null)   {
+            server.joinRoom(myUser, selectedRoom.roomID);
+            myUser.setTable(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
+        }
 
     }
 
     public static void create() throws RemoteException {
         server.createRoom(myUser);
-        comboBoxWorker();
+        myUser.setTable(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
     }
 
-    public static void observe() {
+    public static void observe() throws RemoteException {
 
     }
 
     static void comboBoxWorker() throws RemoteException {
+
         rooms = new JComboBox<>(server.getRoomList().toArray(new Room[0]));
         rooms.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                if (value instanceof Room) {
-                    value = "Room " + ((Room) value).roomID;
+                if (value instanceof Room room) {
+                    if (room.users.isEmpty())
+                        value = "Room " + room.roomID + " (0 users)";
+                    else if (room.users.size() == 1)
+                        value = "Room " + room.roomID + " (1 user)";
+                    else
+                        value = "Room " + room.roomID + " (2 users)";
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             }
         });
+        SwingWorker<Void, ArrayList<Room>> comboBoxWorker = new SwingWorker<Void, ArrayList<Room>>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                while (true) {
+                    try (Socket socket = new Socket("localhost", 1098);
+                         ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
+
+                        ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
+                        publish(roomsList); // Przesyłaj listę pokoi
+                        Thread.sleep(2000);
+
+                    } catch (IOException | ClassNotFoundException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            protected void process(java.util.List<ArrayList<Room>> chunks) {
+
+                ArrayList<Room> latestRoomsList = chunks.get(chunks.size() - 1);
+                Room selectedRoom = (Room) rooms.getSelectedItem();
+                rooms.setModel(new DefaultComboBoxModel<>(latestRoomsList.toArray(new Room[0])));
+                if (selectedRoom != null) {
+                    Room matchingRoom = latestRoomsList.stream()
+                            .filter(Room -> Room.roomID.equals(selectedRoom.roomID))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (matchingRoom != null) {
+                        rooms.setSelectedItem(matchingRoom);
+                    }
+                }
+
+                rooms.repaint();
+                rooms.revalidate();
+            }
+        };
+
+        comboBoxWorker.execute();
     }
 }

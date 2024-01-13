@@ -7,14 +7,14 @@ public class Room implements Serializable {
     ArrayList<User> users = new ArrayList<>();
     String roomID;
     char [][] board;
-    int index = 1;
     char winner;
 
     public Room(String roomID) {
-        this.roomID = String.valueOf(index);
+        this.roomID = roomID;
         this.board = new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}};
-        index++;
     }
 
-
+    public void setBoard(char[][] board) {
+        this.board = board;
+    }
 }

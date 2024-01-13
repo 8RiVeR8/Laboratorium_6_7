@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1533326-3297-4f51-a37c-75750bfe2dc0" name="Changes" comment="Ruszylo">
+    <list default="true" id="a1533326-3297-4f51-a37c-75750bfe2dc0" name="Changes" comment="Swing worker do zrobienia">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Client.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/IServer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/IServer.java" afterDir="false" />
@@ -96,7 +96,7 @@
       <workItem from="1703888397134" duration="222000" />
       <workItem from="1703973325831" duration="3399000" />
       <workItem from="1704030125936" duration="51000" />
-      <workItem from="1704481954886" duration="10897000" />
+      <workItem from="1704481954886" duration="13541000" />
     </task>
     <task id="LOCAL-00001" summary="Ruszylo">
       <created>1704972430658</created>
@@ -105,7 +105,14 @@
       <option name="project" value="LOCAL" />
       <updated>1704972430658</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Swing worker do zrobienia">
+      <created>1704978117086</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1704978117086</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -113,6 +120,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Ruszylo" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ruszylo" />
+    <MESSAGE value="Swing worker do zrobienia" />
+    <option name="LAST_COMMIT_MESSAGE" value="Swing worker do zrobienia" />
   </component>
 </project>
