@@ -22,7 +22,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     }
 
     public static void main(String[] args) {
-        try {
+        try{
             IServer server = new Server();
             LocateRegistry.createRegistry(1099);
             Naming.rebind("rmi://localhost:1099/Server", server);
@@ -41,12 +41,12 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     }
 
     @Override
-    public void connect(String txt) throws RemoteException {
+    public void connect (String txt) throws RemoteException {
         System.out.println(txt);
     }
 
     @Override
-    public User logIN() throws RemoteException {
+    public User logIN () throws RemoteException {
         User user = new User(userList.size());
         userList.add(user);
         return user;
@@ -58,11 +58,12 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     }
 
     @Override
-    public void createRoom(User user) throws RemoteException {
+    public void createRoom (User user) throws RemoteException{
 
         remove(user);
 
         Room room = new Room(String.valueOf(roomList.size()+1));
+        room.setBoard(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
         room.users.add(user);
         roomList.add(room);
     }
@@ -72,7 +73,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     }
 
     @Override
-    public void joinRoom(User user, String selectedRoom) throws RemoteException {
+    public void joinRoom (User user, String selectedRoom) throws RemoteException {
 
         remove(user);
 
@@ -83,6 +84,9 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
             joinedRoom.setBoard(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
 
             if (joinedRoom.users.size() == 2){
+                joinedRoom.setBoard(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
+                joinedRoom.users.get(0).setSign('X');
+                joinedRoom.users.get(1).setSign('O');
                 Server TicTacToe = new Server();
                 TicTacToe.setCurrentRoom(joinedRoom);
                 Thread thread = new Thread(TicTacToe);
@@ -93,51 +97,243 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     }
 
     @Override
-    public void run() {
+    public void logOut (User user) throws RemoteException {
+        remove(user);
+    }
+
+    @Override
+    public boolean waitForUser (User user) throws RemoteException{
+        Room myRoom = roomList.stream().filter(Room -> Room.users.stream().anyMatch(User -> User.ID == user.ID))
+                .findFirst()
+                .orElse(null);
+
+        if(myRoom != null)  {
+            return myRoom.users.size() == 2;
+        }
+        return false;
+    }
+
+    @Override
+    public char[][] getBoard (User user) throws RemoteException{
+        Room myRoom = getRoom(user);
+        return myRoom.board;
+    }
+
+    @Override
+    public boolean checkMyTurn (User user) throws RemoteException{
+
+        Room myRoom = getRoom(user);
+
+        if (myRoom != null)  {
+            if (myRoom.users.get(0) != null && myRoom.users.get(1) != null && myRoom.users.get(0).ID == user.ID)
+                return myRoom.users.get(0).myTurn;
+            else
+                return myRoom.users.get(1).myTurn;
+        }
+        return true;
+    }
+
+    @Override
+    public int[] getWins(User user) throws RemoteException {
+        Room myRoom = getRoom(user);
+
+        if (myRoom.users.get(0) != null && myRoom.users.get(0) != null && myRoom.users.get(0).ID == user.ID)
+            return myRoom.users.get(0).getStatistic();
+        else
+            return myRoom.users.get(1).getStatistic();
+
+    }
+
+    @Override
+    public void move(User user) throws RemoteException {
+        Room myRoom = getRoom(user);
+
+        if (myRoom != null) {
+            myRoom.setBoard(user.table);
+
+            if (myRoom.users.get(0) != null && myRoom.users.get(0).ID == user.ID) {
+                myRoom.users.get(0).setTable(user.table);
+                myRoom.users.get(0).setHasStarted(true);
+                myRoom.users.get(0).setMyTurn(false);
+
+                if (myRoom.users.get(1) != null)
+                    myRoom.users.get(1).setMyTurn(true);
+
+            } else if (myRoom.users.get(1) != null && myRoom.users.get(1).ID == user.ID) {
+                myRoom.users.get(1).setTable(user.table);
+                myRoom.users.get(1).setHasStarted(true);
+                myRoom.users.get(1).setMyTurn(false);
+
+                if (myRoom.users.get(0) != null) {
+                    myRoom.users.get(0).setMyTurn(true);
+                }
+            }
+        }
+    }
+
+    @Override
+    public char getSign(User user) throws RemoteException {
+        Room myRoom = getRoom(user);
+
+        if (myRoom.users.get(0) != null && myRoom.users.get(0).ID == user.ID)
+            return myRoom.users.get(0).sign;
+        else if (myRoom.users.get(1) != null)
+            return myRoom.users.get(1).sign;
+
+        return ' ';
+    }
+
+    @Override
+    public char winner(User user) throws RemoteException {
+        Room myRoom = getRoom(user);
+        return myRoom.winner;
+    }
+
+    public Room getRoom (User user){
+        return roomList.stream().filter(Room -> Room.users.stream().anyMatch(User -> User.ID == user.ID))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void run (){
+
+        currentRoom.users.get(0).setStatistic(new int[]{0, 0, 0});
+        currentRoom.users.get(1).setStatistic(new int[]{0, 0, 0});
+        currentRoom.users.get(0).setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+        currentRoom.users.get(1).setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+
+        while (currentRoom.users.size() == 2)   {
+
+            currentRoom.setBoard(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+            currentRoom.setWinner('-');
+            setTurns();
+
+            while(currentRoom.users.size() == 2 && !isRunning()) {
+
+                if (currentRoom.users.get(0) != null && currentRoom.users.get(0).hasStarted) {
+                    currentRoom.setBoard(currentRoom.users.get(0).table);
+                    currentRoom.users.get(0).setHasStarted(false);
+                    currentRoom.users.get(1).setMyTurn(true);
+                }
+
+                if (currentRoom.users.get(1) != null && currentRoom.users.get(1).hasStarted) {
+                    currentRoom.setBoard(currentRoom.users.get(1).table);
+                    currentRoom.users.get(1).setHasStarted(false);
+                    currentRoom.users.get(0).setMyTurn(true);
+                }
+
+            }
+
+            swapSigns();
+            currentRoom.users.get(0).setMyTurn(false);
+            currentRoom.users.get(1).setMyTurn(false);
+            currentRoom.users.get(0).setHasStarted(false);
+            currentRoom.users.get(1).setHasStarted(false);
+
+            makeStatistics();
+
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+
+        }
 
 
     }
 
-    private static boolean isRunning (){
-        boolean ifWin = isWin();
-        if (!ifWin)
+    private void setTurns (){
+
+        if(currentRoom.users.get(0).sign == 'X')  {
+            currentRoom.users.get(0).setMyTurn(true);
+            currentRoom.users.get(1).setMyTurn(false);
+        }   else {
+            currentRoom.users.get(0).setMyTurn(false);
+            currentRoom.users.get(1).setMyTurn(true);
+        }
+
+    }
+    private void makeStatistics (){
+
+        if(currentRoom.users.get(0) != null && currentRoom.winner == currentRoom.users.get(0).sign)    {
+
+            int[] statistic1 = currentRoom.users.get(0).getStatistic();
+            int[] statistic2 = currentRoom.users.get(1).getStatistic();
+            statistic1[0] += 1;
+            statistic2[2] += 1;
+            currentRoom.users.get(0).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic1);
+
+        } else if (currentRoom.users.get(1) != null && currentRoom.winner == currentRoom.users.get(1).sign) {
+
+            int[] statistic1 = currentRoom.users.get(0).getStatistic();
+            int[] statistic2 = currentRoom.users.get(1).getStatistic();
+            statistic1[2] += 1;
+            statistic2[0] += 1;
+            currentRoom.users.get(0).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic1);
+
+        }   else if (currentRoom.users.get(0) != null && currentRoom.users.get(1) != null){
+
+            int[] statistic1 = currentRoom.users.get(0).getStatistic();
+            int[] statistic2 = currentRoom.users.get(1).getStatistic();
+            statistic1[1] += 1;
+            statistic2[1] += 1;
+            currentRoom.users.get(0).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic1);
+        }
+    }
+    private static void swapSigns (){
+        char signOne = currentRoom.users.get(0).sign;
+        char signTwo = currentRoom.users.get(1).sign;
+        currentRoom.users.get(0).setSign(signTwo);
+        currentRoom.users.get(1).setSign(signOne);
+    }
+
+    public boolean isRunning (){
+
+        if(!isWin())
             return isDraw();
-        return ifWin;
+        else
+            return isWin();
     }
 
-    private static boolean isWin(){
-        char[][] board = currentRoom.board;
+    private static boolean isWin (){
+
         for (int i = 0; i < 3; i++) {
-            if ((board[i][0] == playerOne && board[i][1] == playerOne && board[i][2] == playerOne) ||   //vertical
-                    (board[0][i] == playerOne && board[1][i] == playerOne && board[2][i] == playerOne)) { //horizontal
-                currentRoom.setWhoWon(playerOne);
+            if ((currentRoom.board[i][0] == 'X' && currentRoom.board[i][1] == 'X' && currentRoom.board[i][2] == 'X') ||   //vertical
+                    (currentRoom.board[0][i] == 'X' && currentRoom.board[1][i] == 'X' && currentRoom.board[2][i] == 'X')) { //horizontal
+                currentRoom.setWinner('X');
                 return true;
             }
 
-            if ((board[i][0] == playerTwo && board[i][1] == playerTwo && board[i][2] == playerTwo) ||   //vertical
-                    (board[0][i] == playerTwo && board[1][i] == playerTwo && board[2][i] == playerTwo)) { //horizontal
-                currentRoom.setWhoWon(playerTwo);
+            if ((currentRoom.board[i][0] == 'O' && currentRoom.board[i][1] == 'O' && currentRoom.board[i][2] == 'O') ||   //vertical
+                    (currentRoom.board[0][i] == 'O' && currentRoom.board[1][i] == 'O' && currentRoom.board[2][i] == 'O')) { //horizontal
+                currentRoom.setWinner('O');
                 return true;
             }
 
         }
 
-        if ((board[0][0] == playerOne && board[1][1] == playerOne && board[2][2] == playerOne) ||   //cross
-                (board[0][2] == playerOne && board[1][1] == playerOne && board[2][0] == playerOne)) {
-            currentRoom.setWhoWon(playerOne);
+        if ((currentRoom.board[0][0] == 'X' && currentRoom.board[1][1] == 'X' && currentRoom.board[2][2] == 'X') ||   //cross
+                (currentRoom.board[0][2] == 'X' && currentRoom.board[1][1] == 'X' && currentRoom.board[2][0] == 'X')) {
+            currentRoom.setWinner('X');
             return true;
         }
 
-        if ((board[0][0] == playerTwo && board[1][1] == playerTwo && board[2][2] == playerTwo) ||   //cross
-                (board[0][2] == playerTwo && board[1][1] == playerTwo && board[2][0] == playerTwo)) {
-            currentRoom.setWhoWon(playerTwo);
+        if ((currentRoom.board[0][0] == 'O' && currentRoom.board[1][1] == 'O' && currentRoom.board[2][2] == 'O') ||   //cross
+                (currentRoom.board[0][2] == 'O' && currentRoom.board[1][1] == 'O' && currentRoom.board[2][0] == 'O')) {
+            currentRoom.setWinner('O');
             return true;
         }
 
         return false;
     }
 
-    private static boolean isDraw(){
+    private static boolean isDraw (){
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (currentRoom.board[i][j] == ' ') {
@@ -145,7 +341,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
                 }
             }
         }
-        currentRoom.setWhoWon(' ');
+        currentRoom.setWinner(' ');
         return true;
     }
 }

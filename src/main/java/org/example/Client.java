@@ -4,12 +4,16 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
 
 public class Client {
     static private JComboBox<Room> rooms;
@@ -17,12 +21,13 @@ public class Client {
     static private JLabel labelWins, labelDraws, labelLosses;
     static IServer server;
     static User myUser;
+
     public static void main(String[] args) {
         try {
             server = (IServer) Naming.lookup("rmi://localhost:1099/Server");
             server.connect("Connected");
             myUser = server.logIN();
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e);
         }
 
@@ -146,26 +151,77 @@ public class Client {
                 frame.add(Box.createVerticalStrut(10));
 
                 frame.setVisible(true);
+
+                frame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+
+                        try {
+                            server.logOut(myUser);
+                        } catch (RemoteException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                        System.exit(0);
+                    }
+                });
             }
         });
     }
 
     public static void join() throws RemoteException {
         Room selectedRoom = (Room) rooms.getSelectedItem();
-        if (selectedRoom != null)   {
+        if (selectedRoom != null) {
             server.joinRoom(myUser, selectedRoom.roomID);
-            myUser.setTable(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
+            myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+            updateTable();
         }
 
     }
 
     public static void create() throws RemoteException {
         server.createRoom(myUser);
-        myUser.setTable(new char[][]{{' ', ' ',' '}, {' ', ' ',' '}, {' ', ' ',' '}});
+        myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+        updateTable();
     }
 
     public static void observe() throws RemoteException {
+        Room selectedRoom = (Room) rooms.getSelectedItem();
+        myUser.setMyTurn(false);
 
+        SwingWorker<Void, ArrayList<Room>> observer = new SwingWorker<Void, ArrayList<Room>>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                while(true){
+                    try (Socket socket = new Socket("localhost", 1098);
+                         ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
+
+                        ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
+                        Room pickedRoom = roomsList.stream().filter(Room -> Room.roomID == selectedRoom.roomID).findFirst().orElse(null);
+
+                        if (pickedRoom == null){
+                            break;
+                        }
+                        myUser.setTable(selectedRoom.board);
+                        System.out.println(selectedRoom.board);
+                        publish(roomsList);
+                        Thread.sleep(2000);
+
+                    } catch (IOException | ClassNotFoundException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                return null;
+                //tu był null
+            }
+            @Override
+            protected void process(java.util.List<ArrayList<Room>> chunks){
+                updateTable();
+                ArrayList<Room> roomsUpdated = chunks.get(chunks.size() - 1);
+                rooms.setModel(new DefaultComboBoxModel<>(roomsUpdated.toArray(new Room[0])));
+            }
+
+        };
+        observer.execute();
     }
 
     static void comboBoxWorker() throws RemoteException {
@@ -207,6 +263,7 @@ public class Client {
 
                 ArrayList<Room> latestRoomsList = chunks.get(chunks.size() - 1);
                 Room selectedRoom = (Room) rooms.getSelectedItem();
+                checkOpponent();
                 rooms.setModel(new DefaultComboBoxModel<>(latestRoomsList.toArray(new Room[0])));
                 if (selectedRoom != null) {
                     Room matchingRoom = latestRoomsList.stream()
@@ -225,5 +282,99 @@ public class Client {
         };
 
         comboBoxWorker.execute();
+    }
+
+    public static void checkOpponent() {
+        try {
+            if (server.waitForUser(myUser) && !myUser.busy) {
+                playGame();
+            }
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void playGame() throws RemoteException {
+        myUser.setMyTurn(false);
+        myUser.setBusy(true);
+        updateTable();
+        SwingWorker<Void, Void> gameWorker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+
+                while (server.waitForUser(myUser)) {
+                    myUser.setSign(server.getSign(myUser));
+                    while (server.waitForUser(myUser) && server.winner(myUser) == '-') {
+                        publish();
+
+                        Thread.sleep(100);
+                    }
+                    publish();
+
+                    int[] wins = server.getWins(myUser);
+                }
+                myUser.setBusy(false);
+                return null;
+            }
+
+            @Override
+            protected void process(java.util.List<Void> chunks) {
+                try {
+                    myUser.setMyTurn(server.checkMyTurn(myUser));
+                    myUser.setTable(server.getBoard(myUser));
+                    updateTable();
+
+                } catch (Exception exception) {
+                    System.out.println(exception);
+                }
+            }
+        };
+
+        gameWorker.execute();
+
+
+    }
+
+    public static void updateTable() {
+        buttons.removeAll();
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                JButton button = createButton(i, j);
+                buttons.add(button);
+            }
+        }
+        buttons.revalidate();
+        buttons.repaint();
+    }
+
+
+
+    private static JButton createButton(int i, int j) {
+        JButton button = new JButton(String.valueOf(myUser.table[i][j]));
+        button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 35));
+
+
+        if (myUser.myTurn && myUser.table[i][j] == ' ')   {
+            final int row = i;
+            final int col = j;
+            button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //System.out.println(Arrays.deepToString(myUser.table));
+                    myUser.table[row][col] = myUser.sign;
+                    updateTable();
+                    try {
+                        server.move(myUser);
+                    } catch (RemoteException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    myUser.setHasStarted(true);
+                    myUser.setMyTurn(false);
+                }
+            });
+        }
+
+        return button;
     }
 }

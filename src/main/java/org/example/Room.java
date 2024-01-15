@@ -17,4 +17,8 @@ public class Room implements Serializable {
     public void setBoard(char[][] board) {
         this.board = board;
     }
+
+    public void setWinner(char winner) {
+        this.winner = winner;
+    }
 }

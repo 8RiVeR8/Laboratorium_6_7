@@ -9,4 +9,12 @@ public interface IServer extends Remote {
     ArrayList<Room> getRoomList () throws RemoteException;
     void createRoom (User user) throws RemoteException;
     void joinRoom (User user, String selectedRoom) throws RemoteException;
+    void logOut (User user) throws RemoteException;
+    boolean waitForUser (User user) throws RemoteException;
+    char[][] getBoard (User user) throws RemoteException;
+    boolean checkMyTurn (User user) throws RemoteException;
+    int[] getWins (User user) throws RemoteException;
+    void move (User user) throws RemoteException;
+    char getSign(User user) throws RemoteException;
+    char winner(User user) throws RemoteException;
 }
