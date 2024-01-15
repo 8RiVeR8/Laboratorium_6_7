@@ -17,4 +17,5 @@ public interface IServer extends Remote {
     void move (User user) throws RemoteException;
     char getSign(User user) throws RemoteException;
     char winner(User user) throws RemoteException;
+    int[] getStats(String ID) throws RemoteException;
 }

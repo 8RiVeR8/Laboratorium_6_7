@@ -13,7 +13,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Scanner;
+import java.util.Objects;
 
 public class Client {
     static private JComboBox<Room> rooms;
@@ -21,6 +21,7 @@ public class Client {
     static private JLabel labelWins, labelDraws, labelLosses;
     static IServer server;
     static User myUser;
+    static boolean isRunning;
 
     public static void main(String[] args) {
         try {
@@ -70,7 +71,7 @@ public class Client {
                 buttons = new JPanel(new GridLayout(3, 3));
                 buttons.setBorder(new EmptyBorder(10, 10, 10, 10)); // Dodanie marginesów
                 for (int i = 1; i <= 9; i++) {
-                    JButton button = new JButton("Button " + i);
+                    JButton button = new JButton();
                     button.setPreferredSize(new Dimension(80, 80)); // Ustawienia wielkości
                     buttons.add(button);
                 }
@@ -173,7 +174,12 @@ public class Client {
         if (selectedRoom != null) {
             server.joinRoom(myUser, selectedRoom.roomID);
             myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+            JOptionPane.showMessageDialog(null, "Joined Room" + selectedRoom.roomID, "Information", JOptionPane.INFORMATION_MESSAGE);
             updateTable();
+            isRunning = false;
+            labelWins.setText("Wins: 0");
+            labelDraws.setText("Draws: 0");
+            labelLosses.setText("Losses: 0");
         }
 
     }
@@ -181,45 +187,70 @@ public class Client {
     public static void create() throws RemoteException {
         server.createRoom(myUser);
         myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
+        JOptionPane.showMessageDialog(null, "Room created", "Information", JOptionPane.INFORMATION_MESSAGE);
         updateTable();
+        isRunning = false;
+        labelWins.setText("Wins: 0");
+        labelDraws.setText("Draws: 0");
+        labelLosses.setText("Losses: 0");
     }
 
     public static void observe() throws RemoteException {
+        isRunning = true;
         Room selectedRoom = (Room) rooms.getSelectedItem();
-        myUser.setMyTurn(false);
 
-        SwingWorker<Void, ArrayList<Room>> observer = new SwingWorker<Void, ArrayList<Room>>() {
+        SwingWorker<Void, Void> observer = new SwingWorker<Void, Void>() {
+            private Room pickedRoom;
             @Override
             protected Void doInBackground() throws Exception {
-                while(true){
+                while (isRunning) {
                     try (Socket socket = new Socket("localhost", 1098);
                          ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
 
                         ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
-                        Room pickedRoom = roomsList.stream().filter(Room -> Room.roomID == selectedRoom.roomID).findFirst().orElse(null);
+                        pickedRoom = roomsList.stream().filter(room -> {
+                            assert selectedRoom != null;
+                            return room.roomID.equals(selectedRoom.roomID);
+                        }).findFirst().orElse(null);
 
-                        if (pickedRoom == null){
+                        if (pickedRoom == null) {
                             break;
                         }
-                        myUser.setTable(selectedRoom.board);
-                        System.out.println(selectedRoom.board);
-                        publish(roomsList);
-                        Thread.sleep(2000);
+                        publish();
+                        if(server.getStats(selectedRoom.roomID) != null)    {
+                            int [] wins = server.getStats(selectedRoom.roomID);
+                            labelWins.setText("Player 1 wins: " + wins[0] + "   "); //////////////////////////////////////////////////////////////////////////////////
+                            labelDraws.setText("Draws: " + wins[1] + "   ");
+                            labelLosses.setText("Player 2 wins: " + wins[2] + "   ");
+                        }
+                        Thread.sleep(1500);
 
                     } catch (IOException | ClassNotFoundException ex) {
                         ex.printStackTrace();
                     }
                 }
                 return null;
-                //tu był null
-            }
-            @Override
-            protected void process(java.util.List<ArrayList<Room>> chunks){
-                updateTable();
-                ArrayList<Room> roomsUpdated = chunks.get(chunks.size() - 1);
-                rooms.setModel(new DefaultComboBoxModel<>(roomsUpdated.toArray(new Room[0])));
             }
 
+            @Override
+            protected void process(java.util.List<Void> chunks) {
+                buttons.removeAll();
+
+                if (pickedRoom != null) {
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            JButton button = new JButton(String.valueOf(pickedRoom.board[i][j]));
+                            button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 35));
+                            buttons.add(button);
+                        }
+                    }
+                    SwingUtilities.invokeLater(() -> {
+                        buttons.revalidate();
+                        buttons.repaint();
+                    });
+                }
+
+            }
         };
         observer.execute();
     }
@@ -312,6 +343,9 @@ public class Client {
                     publish();
 
                     int[] wins = server.getWins(myUser);
+                    labelWins.setText("Wins: " + wins[0]);
+                    labelDraws.setText("Draws: " + wins[1]);
+                    labelLosses.setText("Losses: " + wins[2]);
                 }
                 myUser.setBusy(false);
                 return null;
@@ -361,7 +395,7 @@ public class Client {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    //System.out.println(Arrays.deepToString(myUser.table));
+
                     myUser.table[row][col] = myUser.sign;
                     updateTable();
                     try {

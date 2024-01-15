@@ -137,11 +137,12 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     public int[] getWins(User user) throws RemoteException {
         Room myRoom = getRoom(user);
 
-        if (myRoom.users.get(0) != null && myRoom.users.get(0) != null && myRoom.users.get(0).ID == user.ID)
+        if (myRoom.users.get(0) != null && myRoom.users.get(0).ID == user.ID)
             return myRoom.users.get(0).getStatistic();
-        else
+        else if (myRoom.users.get(1) != null)
             return myRoom.users.get(1).getStatistic();
-
+        else
+            return null;
     }
 
     @Override
@@ -189,6 +190,19 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
         return myRoom.winner;
     }
 
+    @Override
+    public int[] getStats(String ID) throws RemoteException {
+        Room room = roomList.stream().filter(Room -> Room.roomID.equals(ID)).findFirst().orElse(null);
+
+        if(room != null)    {
+            if(room.users.get(0) != null)
+                return room.users.get(0).statistic;
+            else if(room.users.get(1) != null)
+                return room.users.get(1).statistic;
+        }
+        return null;
+    }
+
     public Room getRoom (User user){
         return roomList.stream().filter(Room -> Room.users.stream().anyMatch(User -> User.ID == user.ID))
                 .findFirst()
@@ -224,14 +238,12 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
                 }
 
             }
-
+            makeStatistics();
             swapSigns();
             currentRoom.users.get(0).setMyTurn(false);
             currentRoom.users.get(1).setMyTurn(false);
             currentRoom.users.get(0).setHasStarted(false);
             currentRoom.users.get(1).setHasStarted(false);
-
-            makeStatistics();
 
             try {
                 Thread.sleep(3000);
@@ -265,7 +277,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
             statistic1[0] += 1;
             statistic2[2] += 1;
             currentRoom.users.get(0).setStatistic(statistic1);
-            currentRoom.users.get(1).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic2);
 
         } else if (currentRoom.users.get(1) != null && currentRoom.winner == currentRoom.users.get(1).sign) {
 
@@ -274,7 +286,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
             statistic1[2] += 1;
             statistic2[0] += 1;
             currentRoom.users.get(0).setStatistic(statistic1);
-            currentRoom.users.get(1).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic2);
 
         }   else if (currentRoom.users.get(0) != null && currentRoom.users.get(1) != null){
 
@@ -283,7 +295,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
             statistic1[1] += 1;
             statistic2[1] += 1;
             currentRoom.users.get(0).setStatistic(statistic1);
-            currentRoom.users.get(1).setStatistic(statistic1);
+            currentRoom.users.get(1).setStatistic(statistic2);
         }
     }
     private static void swapSigns (){
