@@ -25,7 +25,7 @@ public class Client {
 
     public static void main(String[] args) {
         try {
-            server = (IServer) Naming.lookup("rmi://localhost:1099/Server");
+            server = (IServer) Naming.lookup("rmi://localhost:2137/Server");
             server.connect("Connected");
             myUser = server.logIN();
         } catch (Exception e) {
@@ -204,7 +204,7 @@ public class Client {
             @Override
             protected Void doInBackground() throws Exception {
                 while (isRunning) {
-                    try (Socket socket = new Socket("localhost", 1098);
+                    try (Socket socket = new Socket("localhost", 4200);
                          ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
 
                         ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
@@ -276,7 +276,7 @@ public class Client {
             @Override
             protected Void doInBackground() throws Exception {
                 while (true) {
-                    try (Socket socket = new Socket("localhost", 1098);
+                    try (Socket socket = new Socket("localhost", 4200);
                          ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
 
                         ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();

@@ -24,11 +24,11 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     public static void main(String[] args) {
         try{
             IServer server = new Server();
-            LocateRegistry.createRegistry(1099);
-            Naming.rebind("rmi://localhost:1099/Server", server);
+            LocateRegistry.createRegistry(2137);
+            Naming.rebind("rmi://localhost:2137/Server", server);
             System.err.println("Server ready!");
 
-            ServerSocket serverSocket = new ServerSocket(1098);
+            ServerSocket serverSocket = new ServerSocket(4200);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 ObjectOutputStream outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
