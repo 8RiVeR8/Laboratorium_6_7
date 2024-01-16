@@ -26,7 +26,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
             IServer server = new Server();
             LocateRegistry.createRegistry(2137);
             Naming.rebind("rmi://localhost:2137/Server", server);
-            System.err.println("Server ready!");
+            System.out.println("Server ready!");
 
             ServerSocket serverSocket = new ServerSocket(4200);
             while (true) {

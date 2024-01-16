@@ -219,7 +219,7 @@ public class Client {
                         publish();
                         if(server.getStats(selectedRoom.roomID) != null)    {
                             int [] wins = server.getStats(selectedRoom.roomID);
-                            labelWins.setText("Player 1 wins: " + wins[0] + "   "); //////////////////////////////////////////////////////////////////////////////////
+                            labelWins.setText("Player 1 wins: " + wins[0] + "   ");
                             labelDraws.setText("Draws: " + wins[1] + "   ");
                             labelLosses.setText("Player 2 wins: " + wins[2] + "   ");
                         }
