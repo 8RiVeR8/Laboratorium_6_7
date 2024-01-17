@@ -6,7 +6,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
+import java.util.*;
 
 public class Server extends UnicastRemoteObject implements Runnable, IServer{
     static ArrayList<User> userList = new ArrayList<>();
@@ -19,6 +19,7 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
 
     protected Server() throws RemoteException {
         super ();
+        startPing();
     }
 
     public static void main(String[] args) {
@@ -45,10 +46,37 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
         System.out.println(txt);
     }
 
+    private void startPing() {
+        Timer timer = new Timer(true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                pingClients();
+            }
+        }, 0, 10000);
+    }
+
+    private void pingClients() {
+        Iterator<User> iterator = userList.iterator();
+        while (iterator.hasNext()) {
+            User user = iterator.next();
+            if (user.connected) {
+                user.setConnected(false);
+            } else {
+                remove(user);
+                iterator.remove();
+                System.out.println("User " + user.ID + " disconnected");
+            }
+        }
+    }
+
+
     @Override
     public User logIN () throws RemoteException {
         User user = new User(userList.size());
+        user.setConnected(true);
         userList.add(user);
+        System.out.println("User " + user.ID + " connected");
         return user;
     }
 
@@ -99,6 +127,8 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
     @Override
     public void logOut (User user) throws RemoteException {
         remove(user);
+        userList.removeIf(User -> User.ID == user.ID);
+        System.out.println("User " + user.ID + " disconnected");
     }
 
     @Override
@@ -203,6 +233,14 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
         return null;
     }
 
+    @Override
+    public void ping(User user) throws RemoteException {
+        User myUser = userList.stream().filter(User -> User.ID == user.ID).findFirst().orElse(null);
+        if (myUser != null) {
+            myUser.setConnected(true);
+        }
+    }
+
     public Room getRoom (User user){
         return roomList.stream().filter(Room -> Room.users.stream().anyMatch(User -> User.ID == user.ID))
                 .findFirst()
@@ -225,25 +263,29 @@ public class Server extends UnicastRemoteObject implements Runnable, IServer{
 
             while(currentRoom.users.size() == 2 && !isRunning()) {
 
-                if (currentRoom.users.get(0) != null && currentRoom.users.get(0).hasStarted) {
-                    currentRoom.setBoard(currentRoom.users.get(0).table);
-                    currentRoom.users.get(0).setHasStarted(false);
-                    currentRoom.users.get(1).setMyTurn(true);
-                }
+                if (currentRoom.users.size() == 2 && currentRoom.users.get(0) != null)
+                    if( currentRoom.users.get(0).hasStarted) {
+                        currentRoom.setBoard(Objects.requireNonNull(currentRoom.users.get(0).table));
+                        Objects.requireNonNull(currentRoom).users.get(0).setHasStarted(false);
+                        Objects.requireNonNull(currentRoom).users.get(1).setMyTurn(true);
+                    }
 
-                if (currentRoom.users.get(1) != null && currentRoom.users.get(1).hasStarted) {
-                    currentRoom.setBoard(currentRoom.users.get(1).table);
-                    currentRoom.users.get(1).setHasStarted(false);
-                    currentRoom.users.get(0).setMyTurn(true);
-                }
+                if (currentRoom.users.size() == 2 && currentRoom.users.get(1) != null)
+                    if(currentRoom.users.get(1).hasStarted) {
+                        currentRoom.setBoard(Objects.requireNonNull(currentRoom.users.get(1).table));
+                        Objects.requireNonNull(currentRoom).users.get(1).setHasStarted(false);
+                        Objects.requireNonNull(currentRoom).users.get(0).setMyTurn(true);
+                    }
 
             }
-            makeStatistics();
-            swapSigns();
-            currentRoom.users.get(0).setMyTurn(false);
-            currentRoom.users.get(1).setMyTurn(false);
-            currentRoom.users.get(0).setHasStarted(false);
-            currentRoom.users.get(1).setHasStarted(false);
+            if(currentRoom.users.size() == 2 && currentRoom.users.get(0) != null && currentRoom.users.get(1) != null) {
+                makeStatistics();
+                swapSigns();
+                currentRoom.users.get(0).setMyTurn(false);
+                currentRoom.users.get(1).setMyTurn(false);
+                currentRoom.users.get(0).setHasStarted(false);
+                currentRoom.users.get(1).setHasStarted(false);
+            }
 
             try {
                 Thread.sleep(3000);

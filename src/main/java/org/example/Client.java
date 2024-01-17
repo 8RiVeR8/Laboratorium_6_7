@@ -173,6 +173,7 @@ public class Client {
         Room selectedRoom = (Room) rooms.getSelectedItem();
         if (selectedRoom != null) {
             server.joinRoom(myUser, selectedRoom.roomID);
+            server.ping(myUser);
             myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
             JOptionPane.showMessageDialog(null, "Joined Room" + selectedRoom.roomID, "Information", JOptionPane.INFORMATION_MESSAGE);
             updateTable();
@@ -186,6 +187,7 @@ public class Client {
 
     public static void create() throws RemoteException {
         server.createRoom(myUser);
+        server.ping(myUser);
         myUser.setTable(new char[][]{{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}});
         JOptionPane.showMessageDialog(null, "Room created", "Information", JOptionPane.INFORMATION_MESSAGE);
         updateTable();
@@ -208,6 +210,7 @@ public class Client {
                          ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
 
                         ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
+                        server.ping(myUser);
                         pickedRoom = roomsList.stream().filter(room -> {
                             assert selectedRoom != null;
                             return room.roomID.equals(selectedRoom.roomID);
@@ -278,9 +281,9 @@ public class Client {
                 while (true) {
                     try (Socket socket = new Socket("localhost", 4200);
                          ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
-
                         ArrayList<Room> roomsList = (ArrayList<Room>) inputStream.readObject();
                         publish(roomsList); // Przesyłaj listę pokoi
+                        server.ping(myUser);
                         Thread.sleep(2000);
 
                     } catch (IOException | ClassNotFoundException ex) {
@@ -295,6 +298,11 @@ public class Client {
                 ArrayList<Room> latestRoomsList = chunks.get(chunks.size() - 1);
                 Room selectedRoom = (Room) rooms.getSelectedItem();
                 checkOpponent();
+                try {
+                    server.ping(myUser);
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
                 rooms.setModel(new DefaultComboBoxModel<>(latestRoomsList.toArray(new Room[0])));
                 if (selectedRoom != null) {
                     Room matchingRoom = latestRoomsList.stream()
@@ -328,12 +336,14 @@ public class Client {
     public static void playGame() throws RemoteException {
         myUser.setMyTurn(false);
         myUser.setBusy(true);
+        server.ping(myUser);
         updateTable();
         SwingWorker<Void, Void> gameWorker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
 
                 while (server.waitForUser(myUser)) {
+                    server.ping(myUser);
                     myUser.setSign(server.getSign(myUser));
                     while (server.waitForUser(myUser) && server.winner(myUser) == '-') {
                         publish();
@@ -357,6 +367,7 @@ public class Client {
                     myUser.setMyTurn(server.checkMyTurn(myUser));
                     myUser.setTable(server.getBoard(myUser));
                     updateTable();
+                    server.ping(myUser);
 
                 } catch (Exception exception) {
                     System.out.println(exception);
@@ -400,6 +411,7 @@ public class Client {
                     updateTable();
                     try {
                         server.move(myUser);
+                        server.ping(myUser);
                     } catch (RemoteException ex) {
                         throw new RuntimeException(ex);
                     }

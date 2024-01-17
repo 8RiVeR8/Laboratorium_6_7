@@ -8,12 +8,17 @@ public class User implements Serializable {
     boolean hasStarted;
     boolean myTurn;
     boolean busy;
+    boolean connected;
     int [] statistic;
     char sign;
 
     public User(int ID) {
         this.ID = ID;
         this.busy = false;
+    }
+
+    public void setConnected(boolean connected) {
+        this.connected = connected;
     }
 
     public void setTable(char[][] table) {

@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1533326-3297-4f51-a37c-75750bfe2dc0" name="Changes" comment="Sonczone na pewno">
+    <list default="true" id="a1533326-3297-4f51-a37c-75750bfe2dc0" name="Changes" comment="Sonczone prawie jednak">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Client.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/IServer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/IServer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Server.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Server.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/User.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,7 +55,7 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Application.User1">
+  <component name="RunManager" selected="Application.User2">
     <configuration name="Server" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="org.example.Server" />
       <module name="Laboratorium_6_7" />
@@ -101,7 +103,7 @@
       <workItem from="1703888397134" duration="222000" />
       <workItem from="1703973325831" duration="3399000" />
       <workItem from="1704030125936" duration="51000" />
-      <workItem from="1704481954886" duration="25449000" />
+      <workItem from="1704481954886" duration="27345000" />
     </task>
     <task id="LOCAL-00001" summary="Ruszylo">
       <created>1704972430658</created>
@@ -145,7 +147,14 @@
       <option name="project" value="LOCAL" />
       <updated>1705406298453</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Sonczone prawie jednak">
+      <created>1705412603283</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1705412603283</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -159,6 +168,7 @@
     <MESSAGE value="Skonczone" />
     <MESSAGE value="Sonczone napewno" />
     <MESSAGE value="Sonczone na pewno" />
-    <option name="LAST_COMMIT_MESSAGE" value="Sonczone na pewno" />
+    <MESSAGE value="Sonczone prawie jednak" />
+    <option name="LAST_COMMIT_MESSAGE" value="Sonczone prawie jednak" />
   </component>
 </project>
